@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="id" class="dark h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyStorage - Cloud File Manager (Firebase)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            400: '#2dd4bf',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            900: '#134e4a',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .pulse-dot {
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.15); }
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 h-full overflow-hidden antialiased">
+
+    <!-- LOGIN SCREEN / AUTH GATE -->
+    <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950 px-4 transition-opacity duration-300">
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute -top-40 -left-40 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl"></div>
+            <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl"></div>
+        </div>
+
+        <div class="relative w-full max-w-md p-8 glass-panel rounded-2xl shadow-2xl border border-slate-800/80 text-center">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white text-3xl shadow-lg shadow-cyan-500/20">
+                <i class="fa-solid font-bold fa-cloud-arrow-up"></i>
+            </div>
+            
+            <h1 class="text-2xl font-bold tracking-tight text-white mb-1">MyStorage Cloud</h1>
+            <p class="text-sm text-slate-400 mb-8">Penyimpanan Awan Lintas Perangkat (Firebase Engine)</p>
+
+            <div class="space-y-4">
+                <!-- Google Cloud Sign-In Button -->
+                <button onclick="loginWithGoogleCloud()" class="w-full py-3 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-medium transition-all duration-200 flex items-center justify-center gap-3 shadow-md text-sm">
+                    <i class="fa-brands fa-google text-red-500 text-base"></i>
+                    Masuk dengan Google (Cloud Sync)
+                </button>
+
+                <div class="relative flex py-2 items-center">
+                    <div class="flex-grow border-t border-slate-800"></div>
+                    <span class="flex-shrink mx-4 text-xs uppercase tracking-wider text-slate-500 font-medium">atau</span>
+                    <div class="flex-grow border-t border-slate-800"></div>
+                </div>
+
+                <button onclick="loginAsDemo()" class="w-full py-3 px-4 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 hover:text-white border border-slate-700/60 transition-all duration-200 flex items-center justify-center gap-3 font-medium text-sm group">
+                    <i class="fa-solid fa-user-gear text-cyan-400 group-hover:scale-110 transition-transform"></i>
+                    Masuk Sebagai Akun Demo Lokal
+                </button>
+            </div>
+
+            <div class="mt-8 pt-6 border-t border-slate-800/60 text-xs text-slate-500 space-y-1">
+                <p><i class="fa-solid fa-cloud-bolt text-emerald-400 mr-1"></i> Terhubung ke Firebase Firestore</p>
+                <p><i class="fa-solid fa-sync text-cyan-400 mr-1"></i> Berkas otomatis sinkron di semua perangkat</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD SCREEN -->
+    <div id="app-screen" class="hidden h-full flex flex-col md:flex-row overflow-hidden">
+        
+        <!-- SIDEBAR -->
+        <aside id="sidebar" class="w-full md:w-64 bg-slate-900/90 border-b md:border-b-0 md:border-r border-slate-800 flex flex-col flex-shrink-0 transition-all duration-300 z-30">
+            <div class="p-5 flex items-center justify-between border-b border-slate-800/80">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md shadow-cyan-500/20">
+                        <i class="fa-solid fa-cloud"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-slate-100 tracking-wide text-base leading-tight">MyStorage</h2>
+                        <span class="text-[10px] uppercase font-semibold tracking-wider text-cyan-400">Cloud Sync Active</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 space-y-2">
+                <button onclick="openNewFileModal()" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 font-semibold shadow-lg shadow-cyan-500/15 transition-all duration-200 flex items-center justify-center gap-2 text-sm">
+                    <i class="fa-solid fa-file-circle-plus text-base"></i>
+                    <span>+ File Baru</span>
+                </button>
+
+                <button onclick="openNewFolderModal()" class="w-full py-2.5 px-4 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700/60 transition-all duration-200 flex items-center justify-center gap-2 text-sm font-medium">
+                    <i class="fa-solid fa-folder-plus text-amber-400"></i>
+                    <span>+ Folder Baru</span>
+                </button>
+            </div>
+
+            <nav class="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
+                <a href="#" onclick="setCategoryFilter('all')" id="nav-all" class="nav-item flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-cyan-400 bg-cyan-500/10 border border-cyan-500/20">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-hard-drive w-5 text-center"></i>
+                        <span>Semua Berkas</span>
+                    </div>
+                    <span id="badge-count-all" class="text-xs bg-slate-800 px-2 py-0.5 rounded-full text-slate-300">0</span>
+                </a>
+
+                <a href="#" onclick="setCategoryFilter('folder')" id="nav-folder" class="nav-item flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-folder w-5 text-center text-amber-400"></i>
+                        <span>Folder</span>
+                    </div>
+                    <span id="badge-count-folder" class="text-xs bg-slate-800 px-2 py-0.5 rounded-full text-slate-400">0</span>
+                </a>
+
+                <a href="#" onclick="setCategoryFilter('image')" id="nav-image" class="nav-item flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-image w-5 text-center text-emerald-400"></i>
+                        <span>Gambar</span>
+                    </div>
+                    <span id="badge-count-image" class="text-xs bg-slate-800 px-2 py-0.5 rounded-full text-slate-400">0</span>
+                </a>
+
+                <a href="#" onclick="setCategoryFilter('video')" id="nav-video" class="nav-item flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-video w-5 text-center text-purple-400"></i>
+                        <span>Video</span>
+                    </div>
+                    <span id="badge-count-video" class="text-xs bg-slate-800 px-2 py-0.5 rounded-full text-slate-400">0</span>
+                </a>
+
+                <a href="#" onclick="setCategoryFilter('document')" id="nav-document" class="nav-item flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-file-lines w-5 text-center text-blue-400"></i>
+                        <span>Dokumen & Kode</span>
+                    </div>
+                    <span id="badge-count-document" class="text-xs bg-slate-800 px-2 py-0.5 rounded-full text-slate-400">0</span>
+                </a>
+            </nav>
+
+            <div class="p-4 border-t border-slate-800/80 bg-slate-950/40">
+                <div class="p-3.5 rounded-xl bg-slate-800/40 border border-slate-800 space-y-2">
+                    <div class="flex items-center justify-between text-xs text-slate-300">
+                        <span class="font-medium"><i class="fa-solid fa-database text-cyan-400 mr-1.5"></i> Status Cloud</span>
+                        <span id="quota-percentage" class="text-cyan-400 font-semibold">Online</span>
+                    </div>
+                    <div class="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                        <div id="quota-bar" class="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-500" style="width: 100%"></div>
+                    </div>
+                    <div class="flex justify-between text-[11px] text-slate-400">
+                        <span id="quota-used-text">0 MB tersinkron</span>
+                        <span>Firestore Cloud</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-slate-800/80 flex items-center justify-between">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <img id="user-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=DemoUser" alt="User Avatar" class="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex-shrink-0">
+                    <div class="truncate">
+                        <h4 id="user-name" class="text-sm font-semibold text-slate-200 truncate leading-tight">User Demo</h4>
+                        <span id="user-email" class="text-[11px] text-slate-500 truncate block">demo@mystorage.local</span>
+                    </div>
+                </div>
+                <button onclick="logout()" title="Keluar Akun" class="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors">
+                    <i class="fa-solid fa-right-from-bracket text-base"></i>
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-1 flex flex-col h-full bg-slate-950 overflow-hidden">
+            <header class="p-4 bg-slate-900/60 border-b border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 glass-panel">
+                <div class="relative w-full sm:w-80">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                    <input type="text" id="search-input" oninput="handleSearch(this.value)" placeholder="Cari berkas atau folder..." class="w-full pl-10 pr-4 py-2 bg-slate-950/70 border border-slate-800 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all">
+                </div>
+
+                <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/80 border border-slate-700/60 text-xs text-slate-300">
+                        <span class="relative flex h-2.5 w-2.5">
+                            <span class="pulse-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                        </span>
+                        <span id="sync-status-text" class="font-medium text-slate-300">Cloud Terhubung</span>
+                    </div>
+
+                    <button onclick="triggerManualSync()" title="Segarkan Data Cloud" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition-all active:scale-95 flex items-center justify-center">
+                        <i id="sync-icon" class="fa-solid fa-rotate text-sm text-cyan-400"></i>
+                    </button>
+                </div>
+            </header>
+
+            <div class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+                <div class="flex items-center justify-between bg-slate-900/40 p-3 rounded-xl border border-slate-800/80">
+                    <nav id="breadcrumbs" class="flex items-center gap-2 text-sm text-slate-400 overflow-x-auto whitespace-nowrap">
+                    </nav>
+
+                    <div class="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800 text-slate-400">
+                        <button onclick="setViewMode('grid')" id="view-btn-grid" class="p-1.5 rounded-md hover:text-white text-cyan-400 bg-slate-800 transition-colors">
+                            <i class="fa-solid fa-border-all text-xs"></i>
+                        </button>
+                        <button onclick="setViewMode('list')" id="view-btn-list" class="p-1.5 rounded-md hover:text-white transition-colors">
+                            <i class="fa-solid fa-list text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="dropzone" class="border-2 border-dashed border-slate-800 hover:border-cyan-500/50 bg-slate-900/20 hover:bg-slate-900/40 rounded-2xl p-6 text-center transition-all cursor-pointer group">
+                    <input type="file" id="file-upload-input" multiple onchange="handleFileUpload(event)" class="hidden">
+                    <div onclick="document.getElementById('file-upload-input').click()" class="flex flex-col items-center justify-center gap-2">
+                        <div class="w-12 h-12 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-cloud-arrow-up text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-slate-300">Tarik berkas ke sini atau <span class="text-cyan-400 underline">Pilih Berkas</span> untuk diunggah ke Cloud</p>
+                            <p class="text-xs text-slate-500 mt-1">Otomatis tersinkron di semua perangkat Anda</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="workspace-content" class="space-y-6">
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL: NEW FILE -->
+    <div id="modal-new-file" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+        <div class="w-full max-w-lg glass-panel rounded-2xl border border-slate-800 p-6 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-file-circle-plus text-cyan-400"></i> Buat File Baru di Cloud
+                </h3>
+                <button onclick="closeModal('modal-new-file')" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Nama File & Ekstensi</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="new-filename" placeholder="contoh: catatan_cloud" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-cyan-500">
+                        <select id="new-file-ext" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-cyan-400 font-mono focus:outline-none focus:border-cyan-500">
+                            <option value=".txt">.txt</option>
+                            <option value=".md">.md</option>
+                            <option value=".json">.json</option>
+                            <option value=".html">.html</option>
+                            <option value=".css">.css</option>
+                            <option value=".js">.js</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Isi Berkas Teks</label>
+                    <textarea id="new-file-content" rows="6" placeholder="Ketik isi dokumen atau kode di sini..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 font-mono focus:outline-none focus:border-cyan-500 resize-none"></textarea>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 border-t border-slate-800 pt-4">
+                <button onclick="closeModal('modal-new-file')" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-400 hover:bg-slate-800">Batal</button>
+                <button onclick="submitNewFile()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950">Simpan ke Cloud</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: NEW FOLDER -->
+    <div id="modal-new-folder" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+        <div class="w-full max-w-md glass-panel rounded-2xl border border-slate-800 p-6 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-folder-plus text-amber-400"></i> Buat Folder Baru
+                </h3>
+                <button onclick="closeModal('modal-new-folder')" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Nama Folder</label>
+                <input type="text" id="new-folder-name" placeholder="contoh: Pekerjaan" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-400">
+            </div>
+
+            <div class="flex justify-end gap-3 border-t border-slate-800 pt-4">
+                <button onclick="closeModal('modal-new-folder')" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-400 hover:bg-slate-800">Batal</button>
+                <button onclick="submitNewFolder()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-amber-500 hover:bg-amber-400 text-slate-950">Buat Folder</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: TEXT & MEDIA EDITOR / VIEWER -->
+    <div id="modal-file-editor" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
+        <div class="w-full max-w-3xl glass-panel rounded-2xl border border-slate-800 p-6 space-y-4 shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-3">
+                    <div id="editor-file-icon" class="text-cyan-400 text-xl">
+                        <i class="fa-solid fa-file-code"></i>
+                    </div>
+                    <div>
+                        <h3 id="editor-file-name" class="text-lg font-bold text-white">filename.txt</h3>
+                        <p id="editor-file-meta" class="text-xs text-slate-400">0 KB • Cloud Synchronized</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-file-editor')" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="flex-1 overflow-hidden flex flex-col items-center justify-center relative">
+                <textarea id="editor-textarea" class="w-full flex-1 bg-slate-950/90 border border-slate-800 rounded-xl p-4 font-mono text-sm text-slate-200 focus:outline-none focus:border-cyan-500 resize-none leading-relaxed min-h-[280px]"></textarea>
+                <img id="editor-img-preview" class="hidden max-h-[350px] mx-auto rounded-xl object-contain border border-slate-800" alt="Pratinjau Gambar">
+                <video id="editor-video-preview" controls class="hidden max-h-[350px] mx-auto rounded-xl border border-slate-800 w-full"></video>
+            </div>
+
+            <div class="flex items-center justify-between border-t border-slate-800 pt-4">
+                <div class="flex items-center gap-2">
+                    <button id="btn-copy-text" onclick="copyEditorContent()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium flex items-center gap-1.5">
+                        <i class="fa-solid fa-copy"></i> Salin Teks
+                    </button>
+                    <button onclick="downloadActiveFile()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium flex items-center gap-1.5">
+                        <i class="fa-solid fa-download"></i> Unduh
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button onclick="closeModal('modal-file-editor')" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-400 hover:bg-slate-800">Tutup</button>
+                    <button id="btn-save-text" onclick="saveFileEditorChanges()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-cyan-500 hover:bg-cyan-400 text-slate-950 flex items-center gap-2">
+                        <i class="fa-solid fa-floppy-disk"></i> Simpan ke Cloud
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- FIREBASE SDK & APP LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Konfigurasi Firebase Anda (Menggunakan API Key Asli)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBq5f7bfRKVyA36zXowqy-wnn813dNngS4",
+            authDomain: "mystoragecloud-89643.firebaseapp.com",
+            projectId: "mystoragecloud-89643",
+            storageBucket: "mystoragecloud-89643.appspot.com",
+            messagingSenderId: "683226991017",
+            appId: "1:683226991017:web:e31bc2f130d324863b1cb8",
+            measurementId: "G-NXNGNPKD56"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        window.fbAuth = auth;
+        window.fbProvider = provider;
+        window.fbSignInWithPopup = signInWithPopup;
+        window.fbSignOut = signOut;
+        window.fbDb = db;
+        window.fbCollection = collection;
+        window.fbDoc = doc;
+        window.fbSetDoc = setDoc;
+        window.fbGetDoc = getDoc;
+        window.fbGetDocs = getDocs;
+        window.fbDeleteDoc = deleteDoc;
+        window.fbQuery = query;
+        window.fbWhere = where;
+
+        // Pantau Status Autentikasi Firebase
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = {
+                    name: user.displayName || 'Pengguna Cloud',
+                    email: user.email,
+                    avatar: user.photoURL || 'https://api.dicebear.com/7.x/avataaars/svg?seed=CloudUser',
+                    loginType: 'google'
+                };
+                showDashboardUI();
+            } else {
+                // Cek jika menggunakan akun demo lokal
+                const localUser = localStorage.getItem('mystorage_demo_user');
+                if (localUser) {
+                    currentUser = JSON.parse(localUser);
+                    showDashboardUI();
+                } else {
+                    showLoginUI();
+                }
+            }
+        });
+    </script>
+
+    <script>
+        let currentUser = null;
+        let currentFolderId = 'root';
+        let currentFilter = 'all';
+        let searchQuery = '';
+        let viewMode = 'grid';
+        let activeEditingFileId = null;
+        let activeObjectUrl = null;
+
+        // --- FIRESTORE DATABASE WRAPPER FUNCTIONS ---
+        async function dbGetAll() {
+            if (!currentUser) return [];
+            if (currentUser.loginType === 'demo') {
+                const local = localStorage.getItem('mystorage_demo_items');
+                return local ? JSON.parse(local) : [];
+            }
+            try {
+                const q = window.fbQuery(window.fbCollection(window.fbDb, "items"), window.fbWhere("userId", "==", currentUser.email));
+                const querySnapshot = await window.fbGetDocs(q);
+                const items = [];
+                querySnapshot.forEach((doc) => {
+                    items.push(doc.data());
+                });
+                return items;
+            } catch (e) {
+                console.error("Gagal mengambil data dari Firestore:", e);
+                return [];
+            }
+        }
+
+        async function dbGet(id) {
+            if (currentUser && currentUser.loginType === 'demo') {
+                const items = await dbGetAll();
+                return items.find(i => i.id === id) || null;
+            }
+            try {
+                const docRef = window.fbDoc(window.fbDb, "items", id);
+                const docSnap = await window.fbGetDoc(docRef);
+                return docSnap.exists() ? docSnap.data() : null;
+            } catch (e) {
+                console.error("Gagal mengambil item:", e);
+                return null;
+            }
+        }
+
+        async function dbPut(item) {
+            if (!currentUser) return;
+            item.userId = currentUser.email;
+
+            if (currentUser.loginType === 'demo') {
+                let items = await dbGetAll();
+                const idx = items.findIndex(i => i.id === item.id);
+                if (idx >= 0) items[idx] = item;
+                else items.push(item);
+                localStorage.setItem('mystorage_demo_items', JSON.stringify(items));
+                return;
+            }
+
+            try {
+                const docRef = window.fbDoc(window.fbDb, "items", item.id);
+                await window.fbSetDoc(docRef, item);
+            } catch (e) {
+                console.error("Gagal menyimpan ke Firestore:", e);
+                showToast("Gagal menyinkronkan ke Cloud", "error");
+            }
+        }
+
+        async function dbDelete(id) {
+            if (currentUser && currentUser.loginType === 'demo') {
+                let items = await dbGetAll();
+                items = items.filter(i => i.id !== id && i.parentId !== id);
+                localStorage.setItem('mystorage_demo_items', JSON.stringify(items));
+                return;
+            }
+            try {
+                const docRef = window.fbDoc(window.fbDb, "items", id);
+                await window.fbDeleteDoc(docRef);
+            } catch (e) {
+                console.error("Gagal menghapus dari Firestore:", e);
+            }
+        }
+
+        function convertBlobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        // --- AUTH LOGIC ---
+        async function loginWithGoogleCloud() {
+            try {
+                await window.fbSignInWithPopup(window.fbAuth, window.fbProvider);
+                showToast('Berhasil masuk dengan Google Cloud!', 'success');
+            } catch (e) {
+                console.error("Login Google gagal:", e);
+                showToast("Gagal melakukan login Google", "error");
+            }
+        }
+
+        function loginAsDemo() {
+            const demoUser = {
+                name: 'Pengguna Demo Lokal',
+                email: 'demo@mystorage.local',
+                avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=DemoUser',
+                loginType: 'demo'
+            };
+            currentUser = demoUser;
+            localStorage.setItem('mystorage_demo_user', JSON.stringify(demoUser));
+            
+            // Inisialisasi data demo jika belum ada
+            if (!localStorage.getItem('mystorage_demo_items')) {
+                const initial = [
+                    { id: 'f-1', name: 'Proyek Cloud', type: 'folder', parentId: 'root', createdAt: new Date().toISOString(), size: 0, userId: demoUser.email },
+                    { id: 'file-1', name: 'catatan.md', type: 'document', parentId: 'root', ext: 'md', content: 'data:text/markdown;base64,IyBDYXRhdGFuIERlbW8K', size: 50, createdAt: new Date().toISOString(), userId: demoUser.email }
+                ];
+                localStorage.setItem('mystorage_demo_items', JSON.stringify(initial));
+            }
+
+            showDashboardUI();
+            showToast('Masuk sebagai Akun Demo Lokal', 'success');
+        }
+
+        async function logout() {
+            try {
+                if (window.fbAuth) {
+                    await window.fbSignOut(window.fbAuth);
+                }
+                localStorage.removeItem('mystorage_demo_user');
+                currentUser = null;
+                showLoginUI();
+                showToast('Anda telah keluar dari sesi Cloud', 'info');
+            } catch (e) {
+                showToast('Gagal keluar', 'error');
+            }
+        }
+
+        async function showDashboardUI() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('app-screen').classList.remove('hidden');
+            
+            document.getElementById('user-name').innerText = currentUser.name;
+            document.getElementById('user-email').innerText = currentUser.email;
+            document.getElementById('user-avatar').src = currentUser.avatar;
+
+            await renderWorkspace();
+        }
+
+        function showLoginUI() {
+            document.getElementById('app-screen').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+        }
+
+        async function triggerManualSync() {
+            const icon = document.getElementById('sync-icon');
+            icon.classList.add('fa-spin');
+            
+            await renderWorkspace();
+            
+            setTimeout(() => {
+                icon.classList.remove('fa-spin');
+                showToast('Data Cloud berhasil disinkronkan', 'success');
+            }, 300);
+        }
+
+        // --- WORKSPACE RENDERING ---
+        async function renderWorkspace() {
+            const allItems = await dbGetAll();
+            updateCategoryBadges(allItems);
+
+            let filtered = allItems.filter(item => {
+                if (currentFilter === 'all') {
+                    return item.parentId === currentFolderId;
+                } else if (currentFilter === 'folder') {
+                    return item.type === 'folder' && item.parentId === currentFolderId;
+                } else {
+                    return item.type === currentFilter;
+                }
+            });
+
+            if (searchQuery.trim() !== '') {
+                const query = searchQuery.toLowerCase();
+                filtered = allItems.filter(item => item.name.toLowerCase().includes(query));
+            }
+
+            renderBreadcrumbs(allItems);
+            const container = document.getElementById('workspace-content');
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-16 text-slate-500 space-y-3">
+                        <i class="fa-regular fa-folder-open text-5xl"></i>
+                        <p class="text-sm font-medium">Tidak ada berkas atau folder di Cloud</p>
+                    </div>
+                `;
+                return;
+            }
+
+            if (viewMode === 'grid') {
+                renderGridView(filtered, container);
+            } else {
+                renderListView(filtered, container);
+            }
+        }
+
+        function renderGridView(items, container) {
+            let html = '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">';
+            
+            items.forEach(item => {
+                if (item.type === 'folder') {
+                    html += `
+                        <div onclick="openFolder('${item.id}')" class="group p-4 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-amber-500/40 hover:bg-slate-800/60 transition-all cursor-pointer flex items-center justify-between shadow-sm">
+                            <div class="flex items-center gap-3 overflow-hidden">
+                                <i class="fa-solid fa-folder text-3xl text-amber-400 group-hover:scale-105 transition-transform flex-shrink-0"></i>
+                                <div class="truncate">
+                                    <h4 class="font-semibold text-sm text-slate-200 truncate group-hover:text-amber-300 transition-colors">${escapeHtml(item.name)}</h4>
+                                    <span class="text-[11px] text-slate-500">Folder Cloud</span>
+                                </div>
+                            </div>
+                            <button onclick="event.stopPropagation(); deleteItem('${item.id}')" title="Hapus" class="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-slate-800 transition-colors">
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    const iconConfig = getFileIconConfig(item.ext, item.type);
+                    html += `
+                        <div onclick="openFileViewer('${item.id}')" class="group p-4 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/40 hover:bg-slate-800/60 transition-all cursor-pointer flex flex-col justify-between shadow-sm space-y-3">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex items-center gap-3 overflow-hidden">
+                                    <div class="w-10 h-10 rounded-xl ${iconConfig.bg} flex items-center justify-center ${iconConfig.color} flex-shrink-0 text-lg">
+                                        <i class="${iconConfig.icon}"></i>
+                                    </div>
+                                    <div class="truncate">
+                                        <h4 class="font-semibold text-sm text-slate-200 truncate group-hover:text-cyan-300 transition-colors">${escapeHtml(item.name)}</h4>
+                                        <span class="text-[11px] text-slate-500">${formatBytes(item.size || 0)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between border-t border-slate-800/80 pt-2 text-xs text-slate-500">
+                                <span>${new Date(item.createdAt).toLocaleDateString('id-ID')}</span>
+                                <div class="flex items-center gap-1">
+                                    <button onclick="event.stopPropagation(); downloadFileById('${item.id}')" title="Unduh" class="p-1 rounded hover:text-cyan-400">
+                                        <i class="fa-solid fa-download"></i>
+                                    </button>
+                                    <button onclick="event.stopPropagation(); deleteItem('${item.id}')" title="Hapus" class="p-1 rounded hover:text-red-400">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function renderListView(items, container) {
+            let html = `
+                <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/60">
+                    <table class="w-full text-left text-sm text-slate-300">
+                        <thead class="bg-slate-900 text-xs uppercase text-slate-400 border-b border-slate-800">
+                            <tr>
+                                <th class="py-3 px-4">Nama</th>
+                                <th class="py-3 px-4">Tipe</th>
+                                <th class="py-3 px-4">Ukuran</th>
+                                <th class="py-3 px-4">Tanggal</th>
+                                <th class="py-3 px-4 text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/60">
+            `;
+
+            items.forEach(item => {
+                if (item.type === 'folder') {
+                    html += `
+                        <tr onclick="openFolder('${item.id}')" class="hover:bg-slate-800/50 cursor-pointer transition-colors">
+                            <td class="py-3 px-4 font-medium text-slate-200 flex items-center gap-3">
+                                <i class="fa-solid fa-folder text-amber-400 text-lg"></i>
+                                <span>${escapeHtml(item.name)}</span>
+                            </td>
+                            <td class="py-3 px-4 text-slate-400">Folder</td>
+                            <td class="py-3 px-4 text-slate-500">-</td>
+                            <td class="py-3 px-4 text-slate-400">${new Date(item.createdAt).toLocaleDateString('id-ID')}</td>
+                            <td class="py-3 px-4 text-right">
+                                <button onclick="event.stopPropagation(); deleteItem('${item.id}')" class="text-slate-400 hover:text-red-400 p-1">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    const iconConfig = getFileIconConfig(item.ext, item.type);
+                    html += `
+                        <tr onclick="openFileViewer('${item.id}')" class="hover:bg-slate-800/50 cursor-pointer transition-colors">
+                            <td class="py-3 px-4 font-medium text-slate-200 flex items-center gap-3">
+                                <i class="${iconConfig.icon} ${iconConfig.color} text-lg"></i>
+                                <span>${escapeHtml(item.name)}</span>
+                            </td>
+                            <td class="py-3 px-4 text-slate-400 uppercase text-xs font-mono">${item.ext || item.type}</td>
+                            <td class="py-3 px-4 text-slate-400">${formatBytes(item.size || 0)}</td>
+                            <td class="py-3 px-4 text-slate-400">${new Date(item.createdAt).toLocaleDateString('id-ID')}</td>
+                            <td class="py-3 px-4 text-right space-x-2">
+                                <button onclick="event.stopPropagation(); downloadFileById('${item.id}')" class="text-slate-400 hover:text-cyan-400 p-1">
+                                    <i class="fa-solid fa-download"></i>
+                                </button>
+                                <button onclick="event.stopPropagation(); deleteItem('${item.id}')" class="text-slate-400 hover:text-red-400 p-1">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }
+            });
+
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        }
+
+        function renderBreadcrumbs(allItems) {
+            const container = document.getElementById('breadcrumbs');
+            const path = [];
+            let currId = currentFolderId;
+
+            while (currId !== 'root') {
+                const f = allItems.find(i => i.id === currId && i.type === 'folder');
+                if (f) {
+                    path.unshift(f);
+                    currId = f.parentId;
+                } else {
+                    break;
+                }
+            }
+
+            let html = `
+                <button onclick="openFolder('root')" class="hover:text-cyan-400 flex items-center gap-1.5 font-medium">
+                    <i class="fa-solid fa-house text-xs"></i>
+                    <span>Root Cloud</span>
+                </button>
+            `;
+
+            path.forEach((folder) => {
+                html += `
+                    <i class="fa-solid fa-chevron-right text-[10px] text-slate-600"></i>
+                    <button onclick="openFolder('${folder.id}')" class="hover:text-cyan-400 font-medium text-slate-200">
+                        ${escapeHtml(folder.name)}
+                    </button>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        async function openFolder(folderId) {
+            currentFolderId = folderId;
+            searchQuery = '';
+            document.getElementById('search-input').value = '';
+            await renderWorkspace();
+        }
+
+        function updateCategoryBadges(allItems) {
+            document.getElementById('badge-count-all').innerText = allItems.length;
+            document.getElementById('badge-count-folder').innerText = allItems.filter(i => i.type === 'folder').length;
+            document.getElementById('badge-count-image').innerText = allItems.filter(i => i.type === 'image').length;
+            document.getElementById('badge-count-video').innerText = allItems.filter(i => i.type === 'video').length;
+            document.getElementById('badge-count-document').innerText = allItems.filter(i => i.type === 'document').length;
+        }
+
+        async function setCategoryFilter(category) {
+            currentFilter = category;
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('text-cyan-400', 'bg-cyan-500/10', 'border', 'border-cyan-500/20');
+                el.classList.add('text-slate-400');
+            });
+            const activeNav = document.getElementById(`nav-${category}`);
+            if (activeNav) {
+                activeNav.classList.remove('text-slate-400');
+                activeNav.classList.add('text-cyan-400', 'bg-cyan-500/10', 'border', 'border-cyan-500/20');
+            }
+            await renderWorkspace();
+        }
+
+        async function setViewMode(mode) {
+            viewMode = mode;
+            document.getElementById('view-btn-grid').className = mode === 'grid' ? 'p-1.5 rounded-md hover:text-white text-cyan-400 bg-slate-800 transition-colors' : 'p-1.5 rounded-md hover:text-white transition-colors';
+            document.getElementById('view-btn-list').className = mode === 'list' ? 'p-1.5 rounded-md hover:text-white text-cyan-400 bg-slate-800 transition-colors' : 'p-1.5 rounded-md hover:text-white transition-colors';
+            await renderWorkspace();
+        }
+
+        async function handleSearch(val) {
+            searchQuery = val;
+            await renderWorkspace();
+        }
+
+        function openNewFileModal() {
+            document.getElementById('new-filename').value = '';
+            document.getElementById('new-file-content').value = '';
+            document.getElementById('modal-new-file').classList.remove('hidden');
+        }
+
+        function openNewFolderModal() {
+            document.getElementById('new-folder-name').value = '';
+            document.getElementById('modal-new-folder').classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            if (activeObjectUrl) {
+                URL.revokeObjectURL(activeObjectUrl);
+                activeObjectUrl = null;
+            }
+        }
+
+        async function submitNewFile() {
+            const rawName = document.getElementById('new-filename').value.trim();
+            const ext = document.getElementById('new-file-ext').value;
+            const contentText = document.getElementById('new-file-content').value;
+
+            if (!rawName) {
+                showToast('Masukkan nama file terlebih dahulu', 'error');
+                return;
+            }
+
+            const fileName = rawName.endsWith(ext) ? rawName : rawName + ext;
+            const blob = new Blob([contentText], { type: 'text/plain' });
+            const base64Content = await convertBlobToBase64(blob);
+
+            const newFile = {
+                id: 'file-' + Date.now(),
+                name: fileName,
+                type: 'document',
+                parentId: currentFolderId,
+                ext: ext.replace('.', ''),
+                content: base64Content,
+                size: blob.size,
+                createdAt: new Date().toISOString()
+            };
+
+            await dbPut(newFile);
+            await renderWorkspace();
+            closeModal('modal-new-file');
+            showToast(`File "${fileName}" berhasil disimpan ke Cloud`, 'success');
+        }
+
+        async function submitNewFolder() {
+            const name = document.getElementById('new-folder-name').value.trim();
+            if (!name) {
+                showToast('Masukkan nama folder terlebih dahulu', 'error');
+                return;
+            }
+
+            const newFolder = {
+                id: 'f-' + Date.now(),
+                name: name,
+                type: 'folder',
+                parentId: currentFolderId,
+                size: 0,
+                createdAt: new Date().toISOString()
+            };
+
+            await dbPut(newFolder);
+            await renderWorkspace();
+            closeModal('modal-new-folder');
+            showToast(`Folder "${name}" berhasil dibuat di Cloud`, 'success');
+        }
+
+        async function openFileViewer(fileId) {
+            const file = await dbGet(fileId);
+            if (!file) return;
+
+            activeEditingFileId = fileId;
+            document.getElementById('editor-file-name').innerText = file.name;
+            document.getElementById('editor-file-meta').innerText = `${formatBytes(file.size || 0)} • Cloud Synchronized`;
+
+            const textarea = document.getElementById('editor-textarea');
+            const imgPreview = document.getElementById('editor-img-preview');
+            const videoPreview = document.getElementById('editor-video-preview');
+            const btnSave = document.getElementById('btn-save-text');
+            const btnCopy = document.getElementById('btn-copy-text');
+
+            textarea.classList.add('hidden');
+            imgPreview.classList.add('hidden');
+            videoPreview.classList.add('hidden');
+            btnSave.classList.add('hidden');
+            btnCopy.classList.add('hidden');
+
+            if (file.type === 'image') {
+                imgPreview.src = file.content || '';
+                imgPreview.classList.remove('hidden');
+            } else if (file.type === 'video') {
+                videoPreview.src = file.content || '';
+                videoPreview.classList.remove('hidden');
+            } else {
+                textarea.classList.remove('hidden');
+                btnSave.classList.remove('hidden');
+                btnCopy.classList.remove('hidden');
+
+                if (file.content && file.content.startsWith('data:')) {
+                    try {
+                        const response = await fetch(file.content);
+                        const blobData = await response.blob();
+                        textarea.value = await blobData.text();
+                    } catch(e) {
+                        textarea.value = file.content || '';
+                    }
+                } else {
+                    textarea.value = file.content || '';
+                }
+            }
+
+            document.getElementById('modal-file-editor').classList.remove('hidden');
+        }
+
+        async function saveFileEditorChanges() {
+            if (!activeEditingFileId) return;
+
+            const file = await dbGet(activeEditingFileId);
+            if (file) {
+                const newText = document.getElementById('editor-textarea').value;
+                const newBlob = new Blob([newText], { type: 'text/plain' });
+                const base64Content = await convertBlobToBase64(newBlob);
+
+                file.content = base64Content;
+                file.size = newBlob.size;
+
+                await dbPut(file);
+                await renderWorkspace();
+                closeModal('modal-file-editor');
+                showToast('Perubahan berhasil disinkronkan ke Cloud', 'success');
+            }
+        }
+
+        function copyEditorContent() {
+            const content = document.getElementById('editor-textarea').value;
+            navigator.clipboard.writeText(content).then(() => {
+                showToast('Teks disalin ke clipboard', 'info');
+            });
+        }
+
+        function downloadActiveFile() {
+            if (activeEditingFileId) downloadFileById(activeEditingFileId);
+        }
+
+        async function downloadFileById(fileId) {
+            const file = await dbGet(fileId);
+            if (!file) return;
+
+            const a = document.createElement('a');
+            let url = file.content;
+
+            if (!file.content || !file.content.startsWith('data:')) {
+                const blob = new Blob([file.content || ''], { type: 'text/plain' });
+                url = URL.createObjectURL(blob);
+            }
+
+            a.href = url;
+            a.download = file.name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            if (url.startsWith('blob:')) {
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }
+            showToast(`Mengunduh ${file.name}...`, 'info');
+        }
+
+        async function deleteItem(id) {
+            try {
+                const allItems = await dbGetAll();
+                const toDelete = allItems.filter(i => i.id === id || i.parentId === id);
+                
+                await Promise.all(toDelete.map(item => dbDelete(item.id)));
+                await renderWorkspace();
+                showToast('Item berhasil dihapus dari Cloud', 'success');
+            } catch (e) {
+                showToast('Gagal menghapus item', 'error');
+            }
+        }
+
+        function handleFileUpload(e) {
+            handleFilesList(e.target.files);
+        }
+
+        async function handleFilesList(files) {
+            if (!files || files.length === 0) return;
+
+            for (const file of Array.from(files)) {
+                const ext = file.name.split('.').pop() || 'txt';
+                let type = 'document';
+
+                if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'].includes(ext.toLowerCase())) type = 'image';
+                else if (['mp4', 'webm', 'mkv', 'mov'].includes(ext.toLowerCase())) type = 'video';
+
+                const base64Content = await convertBlobToBase64(file);
+
+                const newFile = {
+                    id: 'file-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+                    name: file.name,
+                    type: type,
+                    parentId: currentFolderId,
+                    ext: ext,
+                    content: base64Content,
+                    size: file.size,
+                    createdAt: new Date().toISOString()
+                };
+
+                await dbPut(newFile);
+            }
+
+            await renderWorkspace();
+            showToast(`${files.length} berkas berhasil diunggah ke Cloud!`, 'success');
+        }
+
+        function getFileIconConfig(ext, type) {
+            ext = (ext || '').toLowerCase();
+            if (type === 'image') return { icon: 'fa-solid fa-image', color: 'text-emerald-400', bg: 'bg-emerald-500/10' };
+            if (type === 'video') return { icon: 'fa-solid fa-video', color: 'text-purple-400', bg: 'bg-purple-500/10' };
+            
+            switch (ext) {
+                case 'py': return { icon: 'fa-brands fa-python', color: 'text-amber-400', bg: 'bg-amber-500/10' };
+                case 'js': return { icon: 'fa-brands fa-js', color: 'text-yellow-400', bg: 'bg-yellow-500/10' };
+                case 'html': return { icon: 'fa-brands fa-html5', color: 'text-orange-400', bg: 'bg-orange-500/10' };
+                case 'css': return { icon: 'fa-brands fa-css3-alt', color: 'text-blue-400', bg: 'bg-blue-500/10' };
+                case 'json': return { icon: 'fa-solid fa-code', color: 'text-cyan-400', bg: 'bg-cyan-500/10' };
+                case 'md': return { icon: 'fa-solid fa-file-pen', color: 'text-teal-400', bg: 'bg-teal-500/10' };
+                default: return { icon: 'fa-solid fa-file-lines', color: 'text-blue-400', bg: 'bg-blue-500/10' };
+            }
+        }
+
+        function formatBytes(bytes, decimals = 2) {
+            if (!+bytes) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            let icon = 'fa-circle-info text-cyan-400';
+            if (type === 'success') icon = 'fa-circle-check text-emerald-400';
+            if (type === 'error') icon = 'fa-circle-xmark text-red-400';
+
+            toast.className = 'glass-panel px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 text-sm text-slate-200 border border-slate-800 transition-all transform translate-y-2 opacity-0 pointer-events-auto';
+            toast.innerHTML = `<i class="fa-solid ${icon} text-lg"></i> <span>${escapeHtml(message)}</span>`;
+
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
