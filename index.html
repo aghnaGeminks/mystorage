@@ -2,7 +2,7 @@
 <html lang="id" class="dark h-full">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MyStorage - Cloud File Manager (Firebase)</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -35,13 +35,12 @@
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
         .glass-panel {
-            background: rgba(15, 23, 42, 0.75);
+            background: rgba(15, 23, 42, 0.85);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.08);
         }
@@ -52,28 +51,30 @@
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.4; transform: scale(1.15); }
         }
+        #sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 h-full overflow-hidden antialiased">
+<body class="bg-slate-950 text-slate-100 h-[100dvh] overflow-hidden antialiased flex flex-col">
 
     <!-- LOGIN SCREEN / AUTH GATE -->
     <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950 px-4 transition-opacity duration-300">
         <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute -top-40 -left-40 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl"></div>
-            <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl"></div>
+            <div class="absolute -top-40 -left-40 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl"></div>
+            <div class="absolute -bottom-40 -right-40 w-80 h-80 bg-blue-600/10 rounded-full blur-3xl"></div>
         </div>
 
-        <div class="relative w-full max-w-md p-8 glass-panel rounded-2xl shadow-2xl border border-slate-800/80 text-center">
+        <div class="relative w-full max-w-md p-6 sm:p-8 glass-panel rounded-2xl shadow-2xl border border-slate-800/80 text-center">
             <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white text-3xl shadow-lg shadow-cyan-500/20">
                 <i class="fa-solid font-bold fa-cloud-arrow-up"></i>
             </div>
             
             <h1 class="text-2xl font-bold tracking-tight text-white mb-1">MyStorage Cloud</h1>
-            <p class="text-sm text-slate-400 mb-8">Penyimpanan Awan Lintas Perangkat (Firebase Engine)</p>
+            <p class="text-xs sm:text-sm text-slate-400 mb-8">Penyimpanan Awan Lintas Perangkat (Firebase Engine)</p>
 
             <div class="space-y-4">
-                <!-- Google Cloud Sign-In Button -->
-                <button onclick="loginWithGoogleCloud()" class="w-full py-3 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-medium transition-all duration-200 flex items-center justify-center gap-3 shadow-md text-sm">
+                <button onclick="loginWithGoogleCloud()" class="w-full py-3.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-medium transition-all duration-200 flex items-center justify-center gap-3 shadow-md text-sm active:scale-95">
                     <i class="fa-brands fa-google text-red-500 text-base"></i>
                     Masuk dengan Google (Cloud Sync)
                 </button>
@@ -84,7 +85,7 @@
                     <div class="flex-grow border-t border-slate-800"></div>
                 </div>
 
-                <button onclick="loginAsDemo()" class="w-full py-3 px-4 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 hover:text-white border border-slate-700/60 transition-all duration-200 flex items-center justify-center gap-3 font-medium text-sm group">
+                <button onclick="loginAsDemo()" class="w-full py-3.5 px-4 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 hover:text-white border border-slate-700/60 transition-all duration-200 flex items-center justify-center gap-3 font-medium text-sm group active:scale-95">
                     <i class="fa-solid fa-user-gear text-cyan-400 group-hover:scale-110 transition-transform"></i>
                     Masuk Sebagai Akun Demo Lokal
                 </button>
@@ -98,11 +99,14 @@
     </div>
 
     <!-- MAIN DASHBOARD SCREEN -->
-    <div id="app-screen" class="hidden h-full flex flex-col md:flex-row overflow-hidden">
+    <div id="app-screen" class="hidden h-full flex flex-col md:flex-row overflow-hidden relative">
         
+        <!-- SIDEBAR BACKDROP (Mobile Overlay) -->
+        <div id="sidebar-backdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-30 hidden md:hidden"></div>
+
         <!-- SIDEBAR -->
-        <aside id="sidebar" class="w-full md:w-64 bg-slate-900/90 border-b md:border-b-0 md:border-r border-slate-800 flex flex-col flex-shrink-0 transition-all duration-300 z-30">
-            <div class="p-5 flex items-center justify-between border-b border-slate-800/80">
+        <aside id="sidebar" class="fixed md:static inset-y-0 left-0 w-72 md:w-64 bg-slate-900/95 md:bg-slate-900/90 border-r border-slate-800 flex flex-col flex-shrink-0 transition-transform duration-300 z-40 -translate-x-full md:translate-x-0">
+            <div class="p-4 sm:p-5 flex items-center justify-between border-b border-slate-800/80">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md shadow-cyan-500/20">
                         <i class="fa-solid fa-cloud"></i>
@@ -112,59 +116,62 @@
                         <span class="text-[10px] uppercase font-semibold tracking-wider text-cyan-400">Cloud Sync Active</span>
                     </div>
                 </div>
+                <button onclick="toggleMobileSidebar()" class="md:hidden p-2 text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
             </div>
 
             <div class="p-4 space-y-2">
-                <button onclick="openNewFileModal()" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 font-semibold shadow-lg shadow-cyan-500/15 transition-all duration-200 flex items-center justify-center gap-2 text-sm">
+                <button onclick="openNewFileModal(); toggleMobileSidebar();" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 font-semibold shadow-lg shadow-cyan-500/15 transition-all duration-200 flex items-center justify-center gap-2 text-sm active:scale-95">
                     <i class="fa-solid fa-file-circle-plus text-base"></i>
                     <span>+ File Baru</span>
                 </button>
 
-                <button onclick="openNewFolderModal()" class="w-full py-2.5 px-4 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700/60 transition-all duration-200 flex items-center justify-center gap-2 text-sm font-medium">
+                <button onclick="openNewFolderModal(); toggleMobileSidebar();" class="w-full py-3 px-4 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700/60 transition-all duration-200 flex items-center justify-center gap-2 text-sm font-medium active:scale-95">
                     <i class="fa-solid fa-folder-plus text-amber-400"></i>
                     <span>+ Folder Baru</span>
                 </button>
             </div>
 
             <nav class="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
-                <a href="#" onclick="setCategoryFilter('all')" id="nav-all" class="nav-item flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-cyan-400 bg-cyan-500/10 border border-cyan-500/20">
+                <a href="#" onclick="setCategoryFilter('all'); toggleMobileSidebar();" id="nav-all" class="nav-item flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-medium transition-all text-cyan-400 bg-cyan-500/10 border border-cyan-500/20">
                     <div class="flex items-center gap-3">
                         <i class="fa-solid fa-hard-drive w-5 text-center"></i>
                         <span>Semua Berkas</span>
                     </div>
-                    <span id="badge-count-all" class="text-xs bg-slate-800 px-2 py-0.5 rounded-full text-slate-300">0</span>
+                    <span id="badge-count-all" class="text-xs bg-slate-800 px-2.5 py-0.5 rounded-full text-slate-300">0</span>
                 </a>
 
-                <a href="#" onclick="setCategoryFilter('folder')" id="nav-folder" class="nav-item flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                <a href="#" onclick="setCategoryFilter('folder'); toggleMobileSidebar();" id="nav-folder" class="nav-item flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
                     <div class="flex items-center gap-3">
                         <i class="fa-solid fa-folder w-5 text-center text-amber-400"></i>
                         <span>Folder</span>
                     </div>
-                    <span id="badge-count-folder" class="text-xs bg-slate-800 px-2 py-0.5 rounded-full text-slate-400">0</span>
+                    <span id="badge-count-folder" class="text-xs bg-slate-800 px-2.5 py-0.5 rounded-full text-slate-400">0</span>
                 </a>
 
-                <a href="#" onclick="setCategoryFilter('image')" id="nav-image" class="nav-item flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                <a href="#" onclick="setCategoryFilter('image'); toggleMobileSidebar();" id="nav-image" class="nav-item flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
                     <div class="flex items-center gap-3">
                         <i class="fa-solid fa-image w-5 text-center text-emerald-400"></i>
                         <span>Gambar</span>
                     </div>
-                    <span id="badge-count-image" class="text-xs bg-slate-800 px-2 py-0.5 rounded-full text-slate-400">0</span>
+                    <span id="badge-count-image" class="text-xs bg-slate-800 px-2.5 py-0.5 rounded-full text-slate-400">0</span>
                 </a>
 
-                <a href="#" onclick="setCategoryFilter('video')" id="nav-video" class="nav-item flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                <a href="#" onclick="setCategoryFilter('video'); toggleMobileSidebar();" id="nav-video" class="nav-item flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
                     <div class="flex items-center gap-3">
                         <i class="fa-solid fa-video w-5 text-center text-purple-400"></i>
                         <span>Video</span>
                     </div>
-                    <span id="badge-count-video" class="text-xs bg-slate-800 px-2 py-0.5 rounded-full text-slate-400">0</span>
+                    <span id="badge-count-video" class="text-xs bg-slate-800 px-2.5 py-0.5 rounded-full text-slate-400">0</span>
                 </a>
 
-                <a href="#" onclick="setCategoryFilter('document')" id="nav-document" class="nav-item flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                <a href="#" onclick="setCategoryFilter('document'); toggleMobileSidebar();" id="nav-document" class="nav-item flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
                     <div class="flex items-center gap-3">
                         <i class="fa-solid fa-file-lines w-5 text-center text-blue-400"></i>
                         <span>Dokumen & Kode</span>
                     </div>
-                    <span id="badge-count-document" class="text-xs bg-slate-800 px-2 py-0.5 rounded-full text-slate-400">0</span>
+                    <span id="badge-count-document" class="text-xs bg-slate-800 px-2.5 py-0.5 rounded-full text-slate-400">0</span>
                 </a>
             </nav>
 
@@ -179,20 +186,20 @@
                     </div>
                     <div class="flex justify-between text-[11px] text-slate-400">
                         <span id="quota-used-text">0 MB tersinkron</span>
-                        <span>Firestore Cloud</span>
+                        <span>Firestore</span>
                     </div>
                 </div>
             </div>
 
-            <div class="p-4 border-t border-slate-800/80 flex items-center justify-between">
+            <div class="p-4 border-t border-slate-800/80 flex items-center justify-between bg-slate-900">
                 <div class="flex items-center gap-3 overflow-hidden">
-                    <img id="user-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=DemoUser" alt="User Avatar" class="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex-shrink-0">
+                    <img id="user-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=DemoUser" alt="Avatar" class="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex-shrink-0">
                     <div class="truncate">
                         <h4 id="user-name" class="text-sm font-semibold text-slate-200 truncate leading-tight">User Demo</h4>
                         <span id="user-email" class="text-[11px] text-slate-500 truncate block">demo@mystorage.local</span>
                     </div>
                 </div>
-                <button onclick="logout()" title="Keluar Akun" class="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors">
+                <button onclick="logout()" title="Keluar Akun" class="p-2.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors">
                     <i class="fa-solid fa-right-from-bracket text-base"></i>
                 </button>
             </div>
@@ -200,33 +207,41 @@
 
         <!-- MAIN CONTENT AREA -->
         <main class="flex-1 flex flex-col h-full bg-slate-950 overflow-hidden">
-            <header class="p-4 bg-slate-900/60 border-b border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 glass-panel">
-                <div class="relative w-full sm:w-80">
-                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-                    <input type="text" id="search-input" oninput="handleSearch(this.value)" placeholder="Cari berkas atau folder..." class="w-full pl-10 pr-4 py-2 bg-slate-950/70 border border-slate-800 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all">
+            <!-- HEADER -->
+            <header class="p-3.5 sm:p-4 bg-slate-900/60 border-b border-slate-800 flex items-center justify-between gap-3 glass-panel">
+                <div class="flex items-center gap-3 flex-1 max-w-md">
+                    <button onclick="toggleMobileSidebar()" class="md:hidden p-2.5 rounded-xl bg-slate-800 text-slate-200 hover:bg-slate-700 active:scale-95 flex items-center justify-center flex-shrink-0">
+                        <i class="fa-solid fa-bars text-base text-cyan-400"></i>
+                    </button>
+                    
+                    <div class="relative w-full">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs sm:text-sm"></i>
+                        <input type="text" id="search-input" oninput="handleSearch(this.value)" placeholder="Cari berkas..." class="w-full pl-9 sm:pl-10 pr-3 py-2 bg-slate-950/70 border border-slate-800 rounded-xl text-xs sm:text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-all">
+                    </div>
                 </div>
 
-                <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/80 border border-slate-700/60 text-xs text-slate-300">
-                        <span class="relative flex h-2.5 w-2.5">
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/80 border border-slate-700/60 text-xs text-slate-300">
+                        <span class="relative flex h-2 w-2">
                             <span class="pulse-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                         </span>
-                        <span id="sync-status-text" class="font-medium text-slate-300">Cloud Terhubung</span>
+                        <span class="font-medium text-slate-300">Cloud Online</span>
                     </div>
 
-                    <button onclick="triggerManualSync()" title="Segarkan Data Cloud" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition-all active:scale-95 flex items-center justify-center">
-                        <i id="sync-icon" class="fa-solid fa-rotate text-sm text-cyan-400"></i>
+                    <button onclick="triggerManualSync()" title="Segarkan Data" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition-all active:scale-95 flex items-center justify-center">
+                        <i id="sync-icon" class="fa-solid fa-rotate text-xs sm:text-sm text-cyan-400"></i>
                     </button>
                 </div>
             </header>
 
-            <div class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
-                <div class="flex items-center justify-between bg-slate-900/40 p-3 rounded-xl border border-slate-800/80">
-                    <nav id="breadcrumbs" class="flex items-center gap-2 text-sm text-slate-400 overflow-x-auto whitespace-nowrap">
+            <!-- CONTENT BODY -->
+            <div class="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-slate-900/40 p-3 rounded-xl border border-slate-800/80 gap-3">
+                    <nav id="breadcrumbs" class="flex items-center gap-2 text-xs sm:text-sm text-slate-400 overflow-x-auto whitespace-nowrap max-w-full pb-1 sm:pb-0">
                     </nav>
 
-                    <div class="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800 text-slate-400">
+                    <div class="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800 text-slate-400 self-end sm:self-auto">
                         <button onclick="setViewMode('grid')" id="view-btn-grid" class="p-1.5 rounded-md hover:text-white text-cyan-400 bg-slate-800 transition-colors">
                             <i class="fa-solid fa-border-all text-xs"></i>
                         </button>
@@ -236,20 +251,20 @@
                     </div>
                 </div>
 
-                <div id="dropzone" class="border-2 border-dashed border-slate-800 hover:border-cyan-500/50 bg-slate-900/20 hover:bg-slate-900/40 rounded-2xl p-6 text-center transition-all cursor-pointer group">
+                <div id="dropzone" class="border-2 border-dashed border-slate-800 hover:border-cyan-500/50 bg-slate-900/20 rounded-2xl p-4 sm:p-6 text-center transition-all cursor-pointer group">
                     <input type="file" id="file-upload-input" multiple onchange="handleFileUpload(event)" class="hidden">
                     <div onclick="document.getElementById('file-upload-input').click()" class="flex flex-col items-center justify-center gap-2">
-                        <div class="w-12 h-12 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform">
-                            <i class="fa-solid fa-cloud-arrow-up text-xl"></i>
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-cloud-arrow-up text-lg sm:text-xl"></i>
                         </div>
                         <div>
-                            <p class="text-sm font-medium text-slate-300">Tarik berkas ke sini atau <span class="text-cyan-400 underline">Pilih Berkas</span> untuk diunggah ke Cloud</p>
-                            <p class="text-xs text-slate-500 mt-1">Otomatis tersinkron di semua perangkat Anda</p>
+                            <p class="text-xs sm:text-sm font-medium text-slate-300">Sentuh atau <span class="text-cyan-400 underline">Pilih Berkas</span> untuk diunggah</p>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Otomatis tersinkron di semua perangkat</p>
                         </div>
                     </div>
                 </div>
 
-                <div id="workspace-content" class="space-y-6">
+                <div id="workspace-content" class="space-y-6 pb-12">
                 </div>
             </div>
         </main>
@@ -257,20 +272,20 @@
 
     <!-- MODAL: NEW FILE -->
     <div id="modal-new-file" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
-        <div class="w-full max-w-lg glass-panel rounded-2xl border border-slate-800 p-6 space-y-4 shadow-2xl">
+        <div class="w-full max-w-lg glass-panel rounded-2xl border border-slate-800 p-5 sm:p-6 space-y-4 shadow-2xl">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-file-circle-plus text-cyan-400"></i> Buat File Baru di Cloud
+                <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-file-circle-plus text-cyan-400"></i> Buat File Baru
                 </h3>
                 <button onclick="closeModal('modal-new-file')" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             
             <div class="space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Nama File & Ekstensi</label>
+                    <label class="block text-[11px] sm:text-xs font-semibold uppercase text-slate-400 mb-1">Nama File & Ekstensi</label>
                     <div class="flex gap-2">
-                        <input type="text" id="new-filename" placeholder="contoh: catatan_cloud" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-cyan-500">
-                        <select id="new-file-ext" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-cyan-400 font-mono focus:outline-none focus:border-cyan-500">
+                        <input type="text" id="new-filename" placeholder="contoh: catatan" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-cyan-500">
+                        <select id="new-file-ext" class="bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-2 text-xs sm:text-sm text-cyan-400 font-mono focus:outline-none focus:border-cyan-500">
                             <option value=".txt">.txt</option>
                             <option value=".md">.md</option>
                             <option value=".json">.json</option>
@@ -282,76 +297,76 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Isi Berkas Teks</label>
-                    <textarea id="new-file-content" rows="6" placeholder="Ketik isi dokumen atau kode di sini..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 font-mono focus:outline-none focus:border-cyan-500 resize-none"></textarea>
+                    <label class="block text-[11px] sm:text-xs font-semibold uppercase text-slate-400 mb-1">Isi Berkas Teks</label>
+                    <textarea id="new-file-content" rows="5" placeholder="Ketik isi dokumen atau kode..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs sm:text-sm text-slate-200 font-mono focus:outline-none focus:border-cyan-500 resize-none"></textarea>
                 </div>
             </div>
 
             <div class="flex justify-end gap-3 border-t border-slate-800 pt-4">
-                <button onclick="closeModal('modal-new-file')" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-400 hover:bg-slate-800">Batal</button>
-                <button onclick="submitNewFile()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950">Simpan ke Cloud</button>
+                <button onclick="closeModal('modal-new-file')" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-400 hover:bg-slate-800">Batal</button>
+                <button onclick="submitNewFile()" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-cyan-500 hover:bg-cyan-400 text-slate-950 active:scale-95">Simpan ke Cloud</button>
             </div>
         </div>
     </div>
 
     <!-- MODAL: NEW FOLDER -->
     <div id="modal-new-folder" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
-        <div class="w-full max-w-md glass-panel rounded-2xl border border-slate-800 p-6 space-y-4 shadow-2xl">
+        <div class="w-full max-w-md glass-panel rounded-2xl border border-slate-800 p-5 sm:p-6 space-y-4 shadow-2xl">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
                     <i class="fa-solid fa-folder-plus text-amber-400"></i> Buat Folder Baru
                 </h3>
                 <button onclick="closeModal('modal-new-folder')" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
 
             <div>
-                <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Nama Folder</label>
-                <input type="text" id="new-folder-name" placeholder="contoh: Pekerjaan" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-400">
+                <label class="block text-[11px] sm:text-xs font-semibold uppercase text-slate-400 mb-1">Nama Folder</label>
+                <input type="text" id="new-folder-name" placeholder="contoh: Dokumen" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-amber-400">
             </div>
 
             <div class="flex justify-end gap-3 border-t border-slate-800 pt-4">
-                <button onclick="closeModal('modal-new-folder')" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-400 hover:bg-slate-800">Batal</button>
-                <button onclick="submitNewFolder()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-amber-500 hover:bg-amber-400 text-slate-950">Buat Folder</button>
+                <button onclick="closeModal('modal-new-folder')" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-400 hover:bg-slate-800">Batal</button>
+                <button onclick="submitNewFolder()" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-amber-500 hover:bg-amber-400 text-slate-950 active:scale-95">Buat Folder</button>
             </div>
         </div>
     </div>
 
     <!-- MODAL: TEXT & MEDIA EDITOR / VIEWER -->
-    <div id="modal-file-editor" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
-        <div class="w-full max-w-3xl glass-panel rounded-2xl border border-slate-800 p-6 space-y-4 shadow-2xl flex flex-col max-h-[90vh]">
+    <div id="modal-file-editor" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/90 backdrop-blur-md p-3 sm:p-4">
+        <div class="w-full max-w-3xl glass-panel rounded-2xl border border-slate-800 p-4 sm:p-6 space-y-3 sm:space-y-4 shadow-2xl flex flex-col max-h-[92vh]">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div class="flex items-center gap-3">
-                    <div id="editor-file-icon" class="text-cyan-400 text-xl">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <div id="editor-file-icon" class="text-cyan-400 text-lg sm:text-xl flex-shrink-0">
                         <i class="fa-solid fa-file-code"></i>
                     </div>
-                    <div>
-                        <h3 id="editor-file-name" class="text-lg font-bold text-white">filename.txt</h3>
-                        <p id="editor-file-meta" class="text-xs text-slate-400">0 KB • Cloud Synchronized</p>
+                    <div class="truncate">
+                        <h3 id="editor-file-name" class="text-sm sm:text-base font-bold text-white truncate">filename.txt</h3>
+                        <p id="editor-file-meta" class="text-[11px] text-slate-400">0 KB • Cloud</p>
                     </div>
                 </div>
-                <button onclick="closeModal('modal-file-editor')" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+                <button onclick="closeModal('modal-file-editor')" class="text-slate-400 hover:text-white p-2 flex-shrink-0"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
 
             <div class="flex-1 overflow-hidden flex flex-col items-center justify-center relative">
-                <textarea id="editor-textarea" class="w-full flex-1 bg-slate-950/90 border border-slate-800 rounded-xl p-4 font-mono text-sm text-slate-200 focus:outline-none focus:border-cyan-500 resize-none leading-relaxed min-h-[280px]"></textarea>
-                <img id="editor-img-preview" class="hidden max-h-[350px] mx-auto rounded-xl object-contain border border-slate-800" alt="Pratinjau Gambar">
-                <video id="editor-video-preview" controls class="hidden max-h-[350px] mx-auto rounded-xl border border-slate-800 w-full"></video>
+                <textarea id="editor-textarea" class="w-full flex-1 bg-slate-950/90 border border-slate-800 rounded-xl p-3 sm:p-4 font-mono text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-cyan-500 resize-none leading-relaxed min-h-[220px]"></textarea>
+                <img id="editor-img-preview" class="hidden max-h-[300px] mx-auto rounded-xl object-contain border border-slate-800" alt="Pratinjau">
+                <video id="editor-video-preview" controls class="hidden max-h-[300px] mx-auto rounded-xl border border-slate-800 w-full"></video>
             </div>
 
-            <div class="flex items-center justify-between border-t border-slate-800 pt-4">
-                <div class="flex items-center gap-2">
-                    <button id="btn-copy-text" onclick="copyEditorContent()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium flex items-center gap-1.5">
-                        <i class="fa-solid fa-copy"></i> Salin Teks
+            <div class="flex flex-col sm:flex-row items-center justify-between border-t border-slate-800 pt-3 gap-2">
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <button id="btn-copy-text" onclick="copyEditorContent()" class="flex-1 sm:flex-none px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-copy"></i> Salin
                     </button>
-                    <button onclick="downloadActiveFile()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium flex items-center gap-1.5">
+                    <button onclick="downloadActiveFile()" class="flex-1 sm:flex-none px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium flex items-center justify-center gap-1.5">
                         <i class="fa-solid fa-download"></i> Unduh
                     </button>
                 </div>
 
-                <div class="flex items-center gap-3">
-                    <button onclick="closeModal('modal-file-editor')" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-400 hover:bg-slate-800">Tutup</button>
-                    <button id="btn-save-text" onclick="saveFileEditorChanges()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-cyan-500 hover:bg-cyan-400 text-slate-950 flex items-center gap-2">
-                        <i class="fa-solid fa-floppy-disk"></i> Simpan ke Cloud
+                <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                    <button onclick="closeModal('modal-file-editor')" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-400 hover:bg-slate-800">Tutup</button>
+                    <button id="btn-save-text" onclick="saveFileEditorChanges()" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-cyan-500 hover:bg-cyan-400 text-slate-950 flex items-center gap-2 active:scale-95">
+                        <i class="fa-solid fa-floppy-disk"></i> Simpan
                     </button>
                 </div>
             </div>
@@ -359,7 +374,7 @@
     </div>
 
     <!-- TOAST NOTIFICATION -->
-    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+    <div id="toast-container" class="fixed bottom-5 right-4 left-4 sm:left-auto z-50 flex flex-col gap-2 pointer-events-none"></div>
 
     <!-- FIREBASE SDK & APP LOGIC -->
     <script type="module">
@@ -367,7 +382,7 @@
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Konfigurasi Firebase Anda (Menggunakan API Key Asli)
+        // Konfigurasi Firebase Asli
         const firebaseConfig = {
             apiKey: "AIzaSyBq5f7bfRKVyA36zXowqy-wnn813dNngS4",
             authDomain: "mystoragecloud-89643.firebaseapp.com",
@@ -397,7 +412,6 @@
         window.fbQuery = query;
         window.fbWhere = where;
 
-        // Pantau Status Autentikasi Firebase
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = {
@@ -408,7 +422,6 @@
                 };
                 showDashboardUI();
             } else {
-                // Cek jika menggunakan akun demo lokal
                 const localUser = localStorage.getItem('mystorage_demo_user');
                 if (localUser) {
                     currentUser = JSON.parse(localUser);
@@ -429,7 +442,18 @@
         let activeEditingFileId = null;
         let activeObjectUrl = null;
 
-        // --- FIRESTORE DATABASE WRAPPER FUNCTIONS ---
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+            }
+        }
+
         async function dbGetAll() {
             if (!currentUser) return [];
             if (currentUser.loginType === 'demo') {
@@ -440,12 +464,10 @@
                 const q = window.fbQuery(window.fbCollection(window.fbDb, "items"), window.fbWhere("userId", "==", currentUser.email));
                 const querySnapshot = await window.fbGetDocs(q);
                 const items = [];
-                querySnapshot.forEach((doc) => {
-                    items.push(doc.data());
-                });
+                querySnapshot.forEach((doc) => { items.push(doc.data()); });
                 return items;
             } catch (e) {
-                console.error("Gagal mengambil data dari Firestore:", e);
+                console.error("Gagal mengambil data:", e);
                 return [];
             }
         }
@@ -460,7 +482,6 @@
                 const docSnap = await window.fbGetDoc(docRef);
                 return docSnap.exists() ? docSnap.data() : null;
             } catch (e) {
-                console.error("Gagal mengambil item:", e);
                 return null;
             }
         }
@@ -482,7 +503,6 @@
                 const docRef = window.fbDoc(window.fbDb, "items", item.id);
                 await window.fbSetDoc(docRef, item);
             } catch (e) {
-                console.error("Gagal menyimpan ke Firestore:", e);
                 showToast("Gagal menyinkronkan ke Cloud", "error");
             }
         }
@@ -497,9 +517,7 @@
             try {
                 const docRef = window.fbDoc(window.fbDb, "items", id);
                 await window.fbDeleteDoc(docRef);
-            } catch (e) {
-                console.error("Gagal menghapus dari Firestore:", e);
-            }
+            } catch (e) {}
         }
 
         function convertBlobToBase64(blob) {
@@ -511,13 +529,11 @@
             });
         }
 
-        // --- AUTH LOGIC ---
         async function loginWithGoogleCloud() {
             try {
                 await window.fbSignInWithPopup(window.fbAuth, window.fbProvider);
                 showToast('Berhasil masuk dengan Google Cloud!', 'success');
             } catch (e) {
-                console.error("Login Google gagal:", e);
                 showToast("Gagal melakukan login Google", "error");
             }
         }
@@ -532,7 +548,6 @@
             currentUser = demoUser;
             localStorage.setItem('mystorage_demo_user', JSON.stringify(demoUser));
             
-            // Inisialisasi data demo jika belum ada
             if (!localStorage.getItem('mystorage_demo_items')) {
                 const initial = [
                     { id: 'f-1', name: 'Proyek Cloud', type: 'folder', parentId: 'root', createdAt: new Date().toISOString(), size: 0, userId: demoUser.email },
@@ -540,20 +555,17 @@
                 ];
                 localStorage.setItem('mystorage_demo_items', JSON.stringify(initial));
             }
-
             showDashboardUI();
             showToast('Masuk sebagai Akun Demo Lokal', 'success');
         }
 
         async function logout() {
             try {
-                if (window.fbAuth) {
-                    await window.fbSignOut(window.fbAuth);
-                }
+                if (window.fbAuth) await window.fbSignOut(window.fbAuth);
                 localStorage.removeItem('mystorage_demo_user');
                 currentUser = null;
                 showLoginUI();
-                showToast('Anda telah keluar dari sesi Cloud', 'info');
+                showToast('Anda telah keluar', 'info');
             } catch (e) {
                 showToast('Gagal keluar', 'error');
             }
@@ -562,11 +574,9 @@
         async function showDashboardUI() {
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
-            
             document.getElementById('user-name').innerText = currentUser.name;
             document.getElementById('user-email').innerText = currentUser.email;
             document.getElementById('user-avatar').src = currentUser.avatar;
-
             await renderWorkspace();
         }
 
@@ -578,70 +588,68 @@
         async function triggerManualSync() {
             const icon = document.getElementById('sync-icon');
             icon.classList.add('fa-spin');
-            
             await renderWorkspace();
-            
             setTimeout(() => {
                 icon.classList.remove('fa-spin');
-                showToast('Data Cloud berhasil disinkronkan', 'success');
+                showToast('Disinkronkan', 'success');
             }, 300);
         }
 
-        // --- WORKSPACE RENDERING ---
+        // WORKSPACE RENDERING DENGAN ANIMASI LOADING
         async function renderWorkspace() {
+            const container = document.getElementById('workspace-content');
+            
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-20 text-slate-400 space-y-3">
+                    <i class="fa-solid fa-spinner fa-spin text-3xl text-cyan-400"></i>
+                    <p class="text-xs sm:text-sm font-medium">Memuat data dari Cloud...</p>
+                </div>
+            `;
+
             const allItems = await dbGetAll();
             updateCategoryBadges(allItems);
 
             let filtered = allItems.filter(item => {
-                if (currentFilter === 'all') {
-                    return item.parentId === currentFolderId;
-                } else if (currentFilter === 'folder') {
-                    return item.type === 'folder' && item.parentId === currentFolderId;
-                } else {
-                    return item.type === currentFilter;
-                }
+                if (currentFilter === 'all') return item.parentId === currentFolderId;
+                if (currentFilter === 'folder') return item.type === 'folder' && item.parentId === currentFolderId;
+                return item.type === currentFilter;
             });
 
             if (searchQuery.trim() !== '') {
-                const query = searchQuery.toLowerCase();
-                filtered = allItems.filter(item => item.name.toLowerCase().includes(query));
+                const q = searchQuery.toLowerCase();
+                filtered = allItems.filter(item => item.name.toLowerCase().includes(q));
             }
 
             renderBreadcrumbs(allItems);
-            const container = document.getElementById('workspace-content');
 
             if (filtered.length === 0) {
                 container.innerHTML = `
                     <div class="flex flex-col items-center justify-center py-16 text-slate-500 space-y-3">
-                        <i class="fa-regular fa-folder-open text-5xl"></i>
-                        <p class="text-sm font-medium">Tidak ada berkas atau folder di Cloud</p>
+                        <i class="fa-regular fa-folder-open text-4xl sm:text-5xl"></i>
+                        <p class="text-xs sm:text-sm font-medium">Tidak ada berkas ditemukan</p>
                     </div>
                 `;
                 return;
             }
 
-            if (viewMode === 'grid') {
-                renderGridView(filtered, container);
-            } else {
-                renderListView(filtered, container);
-            }
+            if (viewMode === 'grid') renderGridView(filtered, container);
+            else renderListView(filtered, container);
         }
 
         function renderGridView(items, container) {
-            let html = '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">';
-            
+            let html = '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">';
             items.forEach(item => {
                 if (item.type === 'folder') {
                     html += `
-                        <div onclick="openFolder('${item.id}')" class="group p-4 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-amber-500/40 hover:bg-slate-800/60 transition-all cursor-pointer flex items-center justify-between shadow-sm">
+                        <div onclick="openFolder('${item.id}')" class="group p-3.5 sm:p-4 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-amber-500/40 transition-all cursor-pointer flex items-center justify-between shadow-sm">
                             <div class="flex items-center gap-3 overflow-hidden">
-                                <i class="fa-solid fa-folder text-3xl text-amber-400 group-hover:scale-105 transition-transform flex-shrink-0"></i>
+                                <i class="fa-solid fa-folder text-2xl sm:text-3xl text-amber-400 flex-shrink-0"></i>
                                 <div class="truncate">
-                                    <h4 class="font-semibold text-sm text-slate-200 truncate group-hover:text-amber-300 transition-colors">${escapeHtml(item.name)}</h4>
-                                    <span class="text-[11px] text-slate-500">Folder Cloud</span>
+                                    <h4 class="font-semibold text-xs sm:text-sm text-slate-200 truncate">${escapeHtml(item.name)}</h4>
+                                    <span class="text-[10px] text-slate-500">Folder</span>
                                 </div>
                             </div>
-                            <button onclick="event.stopPropagation(); deleteItem('${item.id}')" title="Hapus" class="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-slate-800 transition-colors">
+                            <button onclick="event.stopPropagation(); deleteItem('${item.id}')" class="p-2 text-slate-500 hover:text-red-400">
                                 <i class="fa-solid fa-trash-can text-xs"></i>
                             </button>
                         </div>
@@ -649,34 +657,29 @@
                 } else {
                     const iconConfig = getFileIconConfig(item.ext, item.type);
                     html += `
-                        <div onclick="openFileViewer('${item.id}')" class="group p-4 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/40 hover:bg-slate-800/60 transition-all cursor-pointer flex flex-col justify-between shadow-sm space-y-3">
+                        <div onclick="openFileViewer('${item.id}')" class="group p-3.5 sm:p-4 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/40 transition-all cursor-pointer flex flex-col justify-between shadow-sm space-y-3">
                             <div class="flex items-start justify-between gap-2">
                                 <div class="flex items-center gap-3 overflow-hidden">
-                                    <div class="w-10 h-10 rounded-xl ${iconConfig.bg} flex items-center justify-center ${iconConfig.color} flex-shrink-0 text-lg">
+                                    <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl ${iconConfig.bg} flex items-center justify-center ${iconConfig.color} flex-shrink-0 text-base sm:text-lg">
                                         <i class="${iconConfig.icon}"></i>
                                     </div>
                                     <div class="truncate">
-                                        <h4 class="font-semibold text-sm text-slate-200 truncate group-hover:text-cyan-300 transition-colors">${escapeHtml(item.name)}</h4>
-                                        <span class="text-[11px] text-slate-500">${formatBytes(item.size || 0)}</span>
+                                        <h4 class="font-semibold text-xs sm:text-sm text-slate-200 truncate">${escapeHtml(item.name)}</h4>
+                                        <span class="text-[10px] sm:text-[11px] text-slate-500">${formatBytes(item.size || 0)}</span>
                                     </div>
                                 </div>
                             </div>
-                            <div class="flex items-center justify-between border-t border-slate-800/80 pt-2 text-xs text-slate-500">
+                            <div class="flex items-center justify-between border-t border-slate-800/80 pt-2 text-[11px] text-slate-500">
                                 <span>${new Date(item.createdAt).toLocaleDateString('id-ID')}</span>
-                                <div class="flex items-center gap-1">
-                                    <button onclick="event.stopPropagation(); downloadFileById('${item.id}')" title="Unduh" class="p-1 rounded hover:text-cyan-400">
-                                        <i class="fa-solid fa-download"></i>
-                                    </button>
-                                    <button onclick="event.stopPropagation(); deleteItem('${item.id}')" title="Hapus" class="p-1 rounded hover:text-red-400">
-                                        <i class="fa-solid fa-trash-can"></i>
-                                    </button>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="event.stopPropagation(); downloadFileById('${item.id}')" class="p-1.5 hover:text-cyan-400"><i class="fa-solid fa-download"></i></button>
+                                    <button onclick="event.stopPropagation(); deleteItem('${item.id}')" class="p-1.5 hover:text-red-400"><i class="fa-solid fa-trash-can"></i></button>
                                 </div>
                             </div>
                         </div>
                     `;
                 }
             });
-
             html += '</div>';
             container.innerHTML = html;
         }
@@ -684,61 +687,51 @@
         function renderListView(items, container) {
             let html = `
                 <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/60">
-                    <table class="w-full text-left text-sm text-slate-300">
-                        <thead class="bg-slate-900 text-xs uppercase text-slate-400 border-b border-slate-800">
+                    <table class="w-full text-left text-xs sm:text-sm text-slate-300 min-w-[500px]">
+                        <thead class="bg-slate-900 text-[10px] sm:text-xs uppercase text-slate-400 border-b border-slate-800">
                             <tr>
-                                <th class="py-3 px-4">Nama</th>
-                                <th class="py-3 px-4">Tipe</th>
-                                <th class="py-3 px-4">Ukuran</th>
-                                <th class="py-3 px-4">Tanggal</th>
-                                <th class="py-3 px-4 text-right">Aksi</th>
+                                <th class="py-3 px-3 sm:px-4">Nama</th>
+                                <th class="py-3 px-3 sm:px-4">Tipe</th>
+                                <th class="py-3 px-3 sm:px-4">Ukuran</th>
+                                <th class="py-3 px-3 sm:px-4">Tanggal</th>
+                                <th class="py-3 px-3 sm:px-4 text-right">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-800/60">
             `;
-
             items.forEach(item => {
                 if (item.type === 'folder') {
                     html += `
-                        <tr onclick="openFolder('${item.id}')" class="hover:bg-slate-800/50 cursor-pointer transition-colors">
-                            <td class="py-3 px-4 font-medium text-slate-200 flex items-center gap-3">
-                                <i class="fa-solid fa-folder text-amber-400 text-lg"></i>
-                                <span>${escapeHtml(item.name)}</span>
+                        <tr onclick="openFolder('${item.id}')" class="hover:bg-slate-800/50 cursor-pointer">
+                            <td class="py-2.5 px-3 sm:px-4 font-medium text-slate-200 flex items-center gap-2.5">
+                                <i class="fa-solid fa-folder text-amber-400 text-base"></i><span>${escapeHtml(item.name)}</span>
                             </td>
-                            <td class="py-3 px-4 text-slate-400">Folder</td>
-                            <td class="py-3 px-4 text-slate-500">-</td>
-                            <td class="py-3 px-4 text-slate-400">${new Date(item.createdAt).toLocaleDateString('id-ID')}</td>
-                            <td class="py-3 px-4 text-right">
-                                <button onclick="event.stopPropagation(); deleteItem('${item.id}')" class="text-slate-400 hover:text-red-400 p-1">
-                                    <i class="fa-solid fa-trash-can"></i>
-                                </button>
+                            <td class="py-2.5 px-3 sm:px-4 text-slate-400">Folder</td>
+                            <td class="py-2.5 px-3 sm:px-4 text-slate-500">-</td>
+                            <td class="py-2.5 px-3 sm:px-4 text-slate-400">${new Date(item.createdAt).toLocaleDateString('id-ID')}</td>
+                            <td class="py-2.5 px-3 sm:px-4 text-right">
+                                <button onclick="event.stopPropagation(); deleteItem('${item.id}')" class="text-slate-400 hover:text-red-400 p-1.5"><i class="fa-solid fa-trash-can"></i></button>
                             </td>
                         </tr>
                     `;
                 } else {
                     const iconConfig = getFileIconConfig(item.ext, item.type);
                     html += `
-                        <tr onclick="openFileViewer('${item.id}')" class="hover:bg-slate-800/50 cursor-pointer transition-colors">
-                            <td class="py-3 px-4 font-medium text-slate-200 flex items-center gap-3">
-                                <i class="${iconConfig.icon} ${iconConfig.color} text-lg"></i>
-                                <span>${escapeHtml(item.name)}</span>
+                        <tr onclick="openFileViewer('${item.id}')" class="hover:bg-slate-800/50 cursor-pointer">
+                            <td class="py-2.5 px-3 sm:px-4 font-medium text-slate-200 flex items-center gap-2.5">
+                                <i class="${iconConfig.icon} ${iconConfig.color} text-base"></i><span>${escapeHtml(item.name)}</span>
                             </td>
-                            <td class="py-3 px-4 text-slate-400 uppercase text-xs font-mono">${item.ext || item.type}</td>
-                            <td class="py-3 px-4 text-slate-400">${formatBytes(item.size || 0)}</td>
-                            <td class="py-3 px-4 text-slate-400">${new Date(item.createdAt).toLocaleDateString('id-ID')}</td>
-                            <td class="py-3 px-4 text-right space-x-2">
-                                <button onclick="event.stopPropagation(); downloadFileById('${item.id}')" class="text-slate-400 hover:text-cyan-400 p-1">
-                                    <i class="fa-solid fa-download"></i>
-                                </button>
-                                <button onclick="event.stopPropagation(); deleteItem('${item.id}')" class="text-slate-400 hover:text-red-400 p-1">
-                                    <i class="fa-solid fa-trash-can"></i>
-                                </button>
+                            <td class="py-2.5 px-3 sm:px-4 text-slate-400 uppercase text-[10px] font-mono">${item.ext || item.type}</td>
+                            <td class="py-2.5 px-3 sm:px-4 text-slate-400">${formatBytes(item.size || 0)}</td>
+                            <td class="py-2.5 px-3 sm:px-4 text-slate-400">${new Date(item.createdAt).toLocaleDateString('id-ID')}</td>
+                            <td class="py-2.5 px-3 sm:px-4 text-right space-x-1">
+                                <button onclick="event.stopPropagation(); downloadFileById('${item.id}')" class="text-slate-400 hover:text-cyan-400 p-1.5"><i class="fa-solid fa-download"></i></button>
+                                <button onclick="event.stopPropagation(); deleteItem('${item.id}')" class="text-slate-400 hover:text-red-400 p-1.5"><i class="fa-solid fa-trash-can"></i></button>
                             </td>
                         </tr>
                     `;
                 }
             });
-
             html += '</tbody></table></div>';
             container.innerHTML = html;
         }
@@ -750,30 +743,13 @@
 
             while (currId !== 'root') {
                 const f = allItems.find(i => i.id === currId && i.type === 'folder');
-                if (f) {
-                    path.unshift(f);
-                    currId = f.parentId;
-                } else {
-                    break;
-                }
+                if (f) { path.unshift(f); currId = f.parentId; } else break;
             }
 
-            let html = `
-                <button onclick="openFolder('root')" class="hover:text-cyan-400 flex items-center gap-1.5 font-medium">
-                    <i class="fa-solid fa-house text-xs"></i>
-                    <span>Root Cloud</span>
-                </button>
-            `;
-
-            path.forEach((folder) => {
-                html += `
-                    <i class="fa-solid fa-chevron-right text-[10px] text-slate-600"></i>
-                    <button onclick="openFolder('${folder.id}')" class="hover:text-cyan-400 font-medium text-slate-200">
-                        ${escapeHtml(folder.name)}
-                    </button>
-                `;
+            let html = `<button onclick="openFolder('root')" class="hover:text-cyan-400 flex items-center gap-1 font-medium"><i class="fa-solid fa-house text-xs"></i><span>Root</span></button>`;
+            path.forEach(folder => {
+                html += `<i class="fa-solid fa-chevron-right text-[9px] text-slate-600"></i><button onclick="openFolder('${folder.id}')" class="hover:text-cyan-400 font-medium text-slate-200">${escapeHtml(folder.name)}</button>`;
             });
-
             container.innerHTML = html;
         }
 
@@ -813,81 +789,44 @@
             await renderWorkspace();
         }
 
-        async function handleSearch(val) {
-            searchQuery = val;
-            await renderWorkspace();
-        }
-
-        function openNewFileModal() {
-            document.getElementById('new-filename').value = '';
-            document.getElementById('new-file-content').value = '';
-            document.getElementById('modal-new-file').classList.remove('hidden');
-        }
-
-        function openNewFolderModal() {
-            document.getElementById('new-folder-name').value = '';
-            document.getElementById('modal-new-folder').classList.remove('hidden');
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.add('hidden');
-            if (activeObjectUrl) {
-                URL.revokeObjectURL(activeObjectUrl);
-                activeObjectUrl = null;
-            }
-        }
+        async function handleSearch(val) { searchQuery = val; await renderWorkspace(); }
+        function openNewFileModal() { document.getElementById('new-filename').value = ''; document.getElementById('new-file-content').value = ''; document.getElementById('modal-new-file').classList.remove('hidden'); }
+        function openNewFolderModal() { document.getElementById('new-folder-name').value = ''; document.getElementById('modal-new-folder').classList.remove('hidden'); }
+        function closeModal(modalId) { document.getElementById(modalId).classList.add('hidden'); if (activeObjectUrl) { URL.revokeObjectURL(activeObjectUrl); activeObjectUrl = null; } }
 
         async function submitNewFile() {
             const rawName = document.getElementById('new-filename').value.trim();
             const ext = document.getElementById('new-file-ext').value;
             const contentText = document.getElementById('new-file-content').value;
-
-            if (!rawName) {
-                showToast('Masukkan nama file terlebih dahulu', 'error');
-                return;
-            }
+            if (!rawName) { showToast('Masukkan nama file', 'error'); return; }
 
             const fileName = rawName.endsWith(ext) ? rawName : rawName + ext;
             const blob = new Blob([contentText], { type: 'text/plain' });
             const base64Content = await convertBlobToBase64(blob);
 
             const newFile = {
-                id: 'file-' + Date.now(),
-                name: fileName,
-                type: 'document',
-                parentId: currentFolderId,
-                ext: ext.replace('.', ''),
-                content: base64Content,
-                size: blob.size,
-                createdAt: new Date().toISOString()
+                id: 'file-' + Date.now(), name: fileName, type: 'document', parentId: currentFolderId,
+                ext: ext.replace('.', ''), content: base64Content, size: blob.size, createdAt: new Date().toISOString()
             };
 
             await dbPut(newFile);
             await renderWorkspace();
             closeModal('modal-new-file');
-            showToast(`File "${fileName}" berhasil disimpan ke Cloud`, 'success');
+            showToast(`File disimpan`, 'success');
         }
 
         async function submitNewFolder() {
             const name = document.getElementById('new-folder-name').value.trim();
-            if (!name) {
-                showToast('Masukkan nama folder terlebih dahulu', 'error');
-                return;
-            }
+            if (!name) { showToast('Masukkan nama folder', 'error'); return; }
 
             const newFolder = {
-                id: 'f-' + Date.now(),
-                name: name,
-                type: 'folder',
-                parentId: currentFolderId,
-                size: 0,
-                createdAt: new Date().toISOString()
+                id: 'f-' + Date.now(), name: name, type: 'folder', parentId: currentFolderId, size: 0, createdAt: new Date().toISOString()
             };
 
             await dbPut(newFolder);
             await renderWorkspace();
             closeModal('modal-new-folder');
-            showToast(`Folder "${name}" berhasil dibuat di Cloud`, 'success');
+            showToast(`Folder dibuat`, 'success');
         }
 
         async function openFileViewer(fileId) {
@@ -896,7 +835,7 @@
 
             activeEditingFileId = fileId;
             document.getElementById('editor-file-name').innerText = file.name;
-            document.getElementById('editor-file-meta').innerText = `${formatBytes(file.size || 0)} • Cloud Synchronized`;
+            document.getElementById('editor-file-meta').innerText = `${formatBytes(file.size || 0)} • Cloud`;
 
             const textarea = document.getElementById('editor-textarea');
             const imgPreview = document.getElementById('editor-img-preview');
@@ -904,145 +843,97 @@
             const btnSave = document.getElementById('btn-save-text');
             const btnCopy = document.getElementById('btn-copy-text');
 
-            textarea.classList.add('hidden');
-            imgPreview.classList.add('hidden');
-            videoPreview.classList.add('hidden');
-            btnSave.classList.add('hidden');
-            btnCopy.classList.add('hidden');
+            textarea.classList.add('hidden'); imgPreview.classList.add('hidden'); videoPreview.classList.add('hidden'); btnSave.classList.add('hidden'); btnCopy.classList.add('hidden');
 
             if (file.type === 'image') {
-                imgPreview.src = file.content || '';
-                imgPreview.classList.remove('hidden');
+                imgPreview.src = file.content || ''; imgPreview.classList.remove('hidden');
             } else if (file.type === 'video') {
-                videoPreview.src = file.content || '';
-                videoPreview.classList.remove('hidden');
+                videoPreview.src = file.content || ''; videoPreview.classList.remove('hidden');
             } else {
-                textarea.classList.remove('hidden');
-                btnSave.classList.remove('hidden');
-                btnCopy.classList.remove('hidden');
-
+                textarea.classList.remove('hidden'); btnSave.classList.remove('hidden'); btnCopy.classList.remove('hidden');
                 if (file.content && file.content.startsWith('data:')) {
                     try {
                         const response = await fetch(file.content);
                         const blobData = await response.blob();
                         textarea.value = await blobData.text();
-                    } catch(e) {
-                        textarea.value = file.content || '';
-                    }
-                } else {
-                    textarea.value = file.content || '';
-                }
+                    } catch(e) { textarea.value = file.content || ''; }
+                } else { textarea.value = file.content || ''; }
             }
-
             document.getElementById('modal-file-editor').classList.remove('hidden');
         }
 
         async function saveFileEditorChanges() {
             if (!activeEditingFileId) return;
-
             const file = await dbGet(activeEditingFileId);
             if (file) {
                 const newText = document.getElementById('editor-textarea').value;
                 const newBlob = new Blob([newText], { type: 'text/plain' });
-                const base64Content = await convertBlobToBase64(newBlob);
-
-                file.content = base64Content;
+                file.content = await convertBlobToBase64(newBlob);
                 file.size = newBlob.size;
-
                 await dbPut(file);
                 await renderWorkspace();
                 closeModal('modal-file-editor');
-                showToast('Perubahan berhasil disinkronkan ke Cloud', 'success');
+                showToast('Perubahan disimpan', 'success');
             }
         }
 
         function copyEditorContent() {
-            const content = document.getElementById('editor-textarea').value;
-            navigator.clipboard.writeText(content).then(() => {
-                showToast('Teks disalin ke clipboard', 'info');
-            });
+            navigator.clipboard.writeText(document.getElementById('editor-textarea').value).then(() => showToast('Disalin', 'info'));
         }
 
-        function downloadActiveFile() {
-            if (activeEditingFileId) downloadFileById(activeEditingFileId);
-        }
+        function downloadActiveFile() { if (activeEditingFileId) downloadFileById(activeEditingFileId); }
 
         async function downloadFileById(fileId) {
             const file = await dbGet(fileId);
             if (!file) return;
-
             const a = document.createElement('a');
             let url = file.content;
-
             if (!file.content || !file.content.startsWith('data:')) {
                 const blob = new Blob([file.content || ''], { type: 'text/plain' });
                 url = URL.createObjectURL(blob);
             }
-
-            a.href = url;
-            a.download = file.name;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            
-            if (url.startsWith('blob:')) {
-                setTimeout(() => URL.revokeObjectURL(url), 1000);
-            }
-            showToast(`Mengunduh ${file.name}...`, 'info');
+            a.href = url; a.download = file.name;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            if (url.startsWith('blob:')) setTimeout(() => URL.revokeObjectURL(url), 1000);
+            showToast(`Mengunduh...`, 'info');
         }
 
         async function deleteItem(id) {
             try {
                 const allItems = await dbGetAll();
                 const toDelete = allItems.filter(i => i.id === id || i.parentId === id);
-                
                 await Promise.all(toDelete.map(item => dbDelete(item.id)));
                 await renderWorkspace();
-                showToast('Item berhasil dihapus dari Cloud', 'success');
-            } catch (e) {
-                showToast('Gagal menghapus item', 'error');
-            }
+                showToast('Dihapus', 'success');
+            } catch (e) { showToast('Gagal menghapus', 'error'); }
         }
 
-        function handleFileUpload(e) {
-            handleFilesList(e.target.files);
-        }
+        function handleFileUpload(e) { handleFilesList(e.target.files); }
 
         async function handleFilesList(files) {
             if (!files || files.length === 0) return;
-
             for (const file of Array.from(files)) {
                 const ext = file.name.split('.').pop() || 'txt';
                 let type = 'document';
-
                 if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'].includes(ext.toLowerCase())) type = 'image';
                 else if (['mp4', 'webm', 'mkv', 'mov'].includes(ext.toLowerCase())) type = 'video';
 
                 const base64Content = await convertBlobToBase64(file);
-
                 const newFile = {
                     id: 'file-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
-                    name: file.name,
-                    type: type,
-                    parentId: currentFolderId,
-                    ext: ext,
-                    content: base64Content,
-                    size: file.size,
-                    createdAt: new Date().toISOString()
+                    name: file.name, type: type, parentId: currentFolderId, ext: ext,
+                    content: base64Content, size: file.size, createdAt: new Date().toISOString()
                 };
-
                 await dbPut(newFile);
             }
-
             await renderWorkspace();
-            showToast(`${files.length} berkas berhasil diunggah ke Cloud!`, 'success');
+            showToast(`${files.length} berkas diunggah`, 'success');
         }
 
         function getFileIconConfig(ext, type) {
             ext = (ext || '').toLowerCase();
             if (type === 'image') return { icon: 'fa-solid fa-image', color: 'text-emerald-400', bg: 'bg-emerald-500/10' };
             if (type === 'video') return { icon: 'fa-solid fa-video', color: 'text-purple-400', bg: 'bg-purple-500/10' };
-            
             switch (ext) {
                 case 'py': return { icon: 'fa-brands fa-python', color: 'text-amber-400', bg: 'bg-amber-500/10' };
                 case 'js': return { icon: 'fa-brands fa-js', color: 'text-yellow-400', bg: 'bg-yellow-500/10' };
@@ -1056,9 +947,7 @@
 
         function formatBytes(bytes, decimals = 2) {
             if (!+bytes) return '0 Bytes';
-            const k = 1024;
-            const dm = decimals < 0 ? 0 : decimals;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const k = 1024, dm = decimals < 0 ? 0 : decimals, sizes = ['Bytes', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
         }
@@ -1070,13 +959,12 @@
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-
             let icon = 'fa-circle-info text-cyan-400';
             if (type === 'success') icon = 'fa-circle-check text-emerald-400';
             if (type === 'error') icon = 'fa-circle-xmark text-red-400';
 
-            toast.className = 'glass-panel px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 text-sm text-slate-200 border border-slate-800 transition-all transform translate-y-2 opacity-0 pointer-events-auto';
-            toast.innerHTML = `<i class="fa-solid ${icon} text-lg"></i> <span>${escapeHtml(message)}</span>`;
+            toast.className = 'glass-panel px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 text-xs sm:text-sm text-slate-200 border border-slate-800 transition-all transform translate-y-2 opacity-0 pointer-events-auto';
+            toast.innerHTML = `<i class="fa-solid ${icon} text-base sm:text-lg"></i> <span>${escapeHtml(message)}</span>`;
 
             container.appendChild(toast);
             setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
